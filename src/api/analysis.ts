@@ -8,42 +8,61 @@ export interface AnalyzeParams {
   code: string
 }
 
-export interface AnalyzeResponse {
-  recordId: number
-  summary: string
-  algorithmIdea: string
-  errorAnalysis: string
-  edgeCases: string[]
-  timeComplexity: string
-  spaceComplexity: string
-  optimization: string
-  teachingGuide: string
-  nextSteps: string[]
-}
-
-export function analyze(data: AnalyzeParams) {
-  return request.post<any, { code: number; data: AnalyzeResponse }>('/problems/analyze', data, {
-    timeout: 120000
-  })
-}
-
-// 历史记录列表项（增加 summary 字段）
 export interface HistoryItem {
   id: number
   title: string
   language: string
   createdAt: string
-  summary: string   // 分析摘要
+  summary: string
 }
 
-export const getHistory = (params?: { page?: number; size?: number; title?: string; language?: string; startDate?: string; endDate?: string }) => {
-  return request.get('/analysis/history', { params })
+export interface ReportDetail {
+  id: number
+  title: string
+  language: string
+  code: string
+  summary: string
+  algorithmIdea: string
+  errorAnalysis: string
+  edgeCases: string[] | string
+  timeComplexity: string
+  spaceComplexity: string
+  optimization: string
+  teachingGuide: string
+  nextSteps: string[] | string
+  createdAt: string
 }
 
-export const getDetail = (id: number) => {
-  return request.get(`/analysis/${id}`)
+export interface ConversationItem {
+  id: number
+  question: string
+  answer: string
+  createdAt: string
 }
 
-export const deleteRecord = (id: number) => {
-  return request.delete(`/analysis/${id}`)
+export interface HistoryQuery {
+  page?: number
+  size?: number
+  title?: string
+  language?: string
+  startDate?: string
+  endDate?: string
 }
+
+export const analyze = (data: AnalyzeParams) =>
+  request.post('/problems/analyze', data, { timeout: 120000 })
+
+export const getHistory = (params?: HistoryQuery) =>
+  request.get('/analysis/history', { params })
+
+export const getDetail = (id: number) =>
+  request.get(`/analysis/${id}`)
+
+export const deleteRecord = (id: number) =>
+  request.delete(`/analysis/${id}`)
+
+export const getConversations = (id: number) =>
+  request.get(`/analysis/${id}/conversations`)
+
+export const askQuestion = (id: number, question: string) =>
+  request.post(`/analysis/${id}/ask`, { question })

@@ -10,26 +10,6 @@ export interface RegisterParams {
   password: string
 }
 
-export interface UserInfo {
-  id: number
-  username: string
-}
+export const login = (data: LoginParams) => request.post('/auth/login', data)
 
-export interface LoginData {
-  token: string
-  user: UserInfo
-}
-
-export interface ApiResponse<T> {
-  code: number
-  message: string
-  data: T
-}
-
-export const login = (data: LoginParams): Promise<ApiResponse<LoginData>> => {
-  return request.post<ApiResponse<LoginData>, ApiResponse<LoginData>>('/auth/login', data)
-}
-
-export const register = (data: RegisterParams): Promise<ApiResponse<null>> => {
-  return request.post<ApiResponse<null>, ApiResponse<null>>('/auth/register', data)
-}
+export const register = (data: RegisterParams) => request.post('/auth/register', data)

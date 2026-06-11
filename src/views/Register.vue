@@ -1,107 +1,121 @@
 <template>
-  <div class="register-container">
-    <el-card class="register-card">
-      <h2>注册</h2>
-      <el-form :model="form" :rules="rules" ref="formRef">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名（3-20 个字符）" :prefix-icon="UserIcon" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码（6-20 个字符）" :prefix-icon="LockIcon" />
-        </el-form-item>
-        <el-form-item prop="confirmPassword">
-          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" :prefix-icon="LockIcon" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleRegister" :loading="loading" style="width: 100%">注册</el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-link type="info" @click="router.push('/login')">已有账号？立即登录</el-link>
-        </el-form-item>
-      </el-form>
-    </el-card>
+  <div class="auth-page">
+    <header class="top-bar">
+      <div class="logo">AI Code Mentor</div>
+      <div class="nav-actions">
+        <RouterLink to="/home" class="nav-link">首页</RouterLink>
+        <RouterLink to="/analyze" class="nav-link">代码分析</RouterLink>
+      </div>
+    </header>
+
+    <div class="auth-container">
+      <div class="intro-panel">
+        <div class="intro-content">
+          <h1>加入 AI Code Mentor</h1>
+          <p>创建账号后，即可体验 AI 教学式代码分析与算法学习辅助。</p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="dot"></span>
+              智能算法讲解
+            </div>
+            <div class="feature-item">
+              <span class="dot"></span>
+              自动复杂度分析
+            </div>
+            <div class="feature-item">
+              <span class="dot"></span>
+              个性化学习记录
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-panel">
+        <div class="form-card">
+          <div class="form-header">
+            <h2>创建账号</h2>
+            <p>填写以下信息完成注册</p>
+          </div>
+
+          <el-form :model="form" :rules="rules" ref="formRef" label-position="top">
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input
+                v-model="form.password"
+                type="password"
+                show-password
+                placeholder="请输入密码"
+                size="large"
+              />
+            </el-form-item>
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input
+                v-model="form.confirmPassword"
+                type="password"
+                show-password
+                placeholder="请再次输入密码"
+                size="large"
+              />
+            </el-form-item>
+            <el-button type="primary" size="large" class="submit-btn" @click="handleRegister">
+              注册
+            </el-button>
+          </el-form>
+
+          <div class="bottom-text">
+            已有账号？
+            <RouterLink to="/login" class="link">立即登录</RouterLink>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { User as UserIcon, Lock as LockIcon } from '@element-plus/icons-vue'
 import { register } from '@/api/auth'
+import '@/styles/auth.css'
 
 const router = useRouter()
-const formRef = ref()
-const loading = ref(false)
+const formRef = ref<FormInstance>()
+const form = reactive({ username: '', password: '', confirmPassword: '' })
 
-const form = reactive({
-  username: '',
-  password: '',
-  confirmPassword: ''
-})
-
-function validateConfirmPassword(_rule: unknown, value: string, callback: (error?: Error) => void) {
-  if (value !== form.password) {
-    callback(new Error('两次输入的密码不一致'))
-  } else {
-    callback()
-  }
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (err?: Error) => void) => {
+  if (!value) callback(new Error('请再次输入密码'))
+  else if (value !== form.password) callback(new Error('两次输入密码不一致'))
+  else callback()
 }
 
-const rules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度为 3-20 个字符', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度为 6-20 个字符', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    { validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+const rules: FormRules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }]
 }
 
 async function handleRegister() {
-  if (!formRef.value) return
+  const valid = await formRef.value?.validate()
+  if (!valid) return
+
   try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-  loading.value = true
-  try {
-    const res = await register({
-      username: form.username,
-      password: form.password
-    })
-    if (res.code === 200) {
-      ElMessage.success('注册成功，请登录')
-      router.push('/login')
-    }
-  } catch (error) {
-    // 错误已由拦截器处理
-  } finally {
-    loading.value = false
-  }
+    await register({ username: form.username, password: form.password })
+    router.push('/login')
+  } catch {}
 }
 </script>
 
 <style scoped>
-.register-container {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-.register-card {
-  width: 400px;
-  border-radius: 16px;
-}
-.register-card h2 {
-  text-align: center;
+.intro-content h1 {
+  font-size: 52px;
+  color: #243447;
   margin-bottom: 24px;
+}
+
+.form-panel {
+  width: 460px;
 }
 </style>

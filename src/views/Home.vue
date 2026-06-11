@@ -1,4 +1,3 @@
-//首页
 <template>
   <div class="home-container">
     <el-row :gutter="24">
@@ -37,11 +36,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getHistory } from '../api/analysis'
+import { getHistory, type HistoryItem } from '@/api/analysis'
 
 const router = useRouter()
 const loading = ref(false)
-const recentRecords = ref([])
+const recentRecords = ref<HistoryItem[]>([])
 
 const sites = [
   { name: 'LeetCode', url: 'https://leetcode.com/' },
@@ -53,11 +52,9 @@ const sites = [
   { name: 'AcWing', url: 'https://www.acwing.com/' }
 ]
 
-const openSite = (url: string) => {
-  window.open(url, '_blank')
-}
+const openSite = (url: string) => window.open(url, '_blank')
 
-const fetchRecentRecords = async () => {
+async function fetchRecentRecords() {
   loading.value = true
   try {
     const res = await getHistory({ page: 1, size: 5 })
@@ -67,9 +64,7 @@ const fetchRecentRecords = async () => {
   }
 }
 
-onMounted(() => {
-  fetchRecentRecords()
-})
+onMounted(fetchRecentRecords)
 </script>
 
 <style scoped>

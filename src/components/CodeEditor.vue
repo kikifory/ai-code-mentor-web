@@ -1,13 +1,9 @@
-//代码编辑器组件,封装 Monaco Editor,支持语言选择和代码高亮
 <template>
   <div class="code-editor">
     <div class="toolbar">
       <span>代码编辑器</span>
       <el-select v-model="currentLang" size="small" @change="handleLangChange" style="width: 120px">
-        <el-option label="Java" value="java" />
-        <el-option label="C++" value="cpp" />
-        <el-option label="Python" value="python" />
-        <el-option label="JavaScript" value="javascript" />
+        <el-option v-for="item in languages" :key="item.monaco" :label="item.label" :value="item.monaco" />
       </el-select>
     </div>
     <div ref="editorContainer" class="editor-container"></div>
@@ -18,33 +14,32 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import * as monaco from 'monaco-editor'
 
+const languages = [
+  { label: 'Java', monaco: 'java' },
+  { label: 'C++', monaco: 'cpp' },
+  { label: 'Python', monaco: 'python' },
+  { label: 'JavaScript', monaco: 'javascript' }
+] as const
+
+const monacoToLabel = Object.fromEntries(languages.map((item) => [item.monaco, item.label]))
+const labelToMonaco = Object.fromEntries(languages.map((item) => [item.label, item.monaco]))
+
 const props = defineProps<{
   modelValue: string
-  language?: string   // 外部传入 "Java" / "C++" / "Python" / "JavaScript"
+  language?: string
 }>()
 
-const emit = defineEmits(['update:modelValue', 'language-change'])
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  'language-change': [label: string]
+}>()
 
 const editorContainer = ref<HTMLElement>()
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
 
-// 语言映射：展示名 -> monaco 内部名
-const langMap: Record<string, string> = {
-  'Java': 'java',
-  'C++': 'cpp',
-  'Python': 'python',
-  'JavaScript': 'javascript'
-}
-const reverseMap: Record<string, string> = {
-  'java': 'Java',
-  'cpp': 'C++',
-  'python': 'Python',
-  'javascript': 'JavaScript'
-}
+const currentLang = ref(labelToMonaco[props.language || 'Java'] || 'java')
 
-const currentLang = ref(langMap[props.language || 'Java'] || 'java')
-
-const initEditor = () => {
+function initEditor() {
   if (!editorContainer.value) return
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
@@ -59,33 +54,27 @@ const initEditor = () => {
   })
 }
 
-const setLanguage = (lang: string) => {
-  if (editor) {
-    monaco.editor.setModelLanguage(editor.getModel()!, lang)
-  }
+function setLanguage(lang: string) {
+  const model = editor?.getModel()
+  if (model) monaco.editor.setModelLanguage(model, lang)
 }
 
-const handleLangChange = (val: string) => {
+function handleLangChange(val: string) {
   setLanguage(val)
-  const displayLang = reverseMap[val]
-  if (displayLang) emit('language-change', displayLang)
+  const label = monacoToLabel[val]
+  if (label) emit('language-change', label)
 }
 
-// 外部 language 变化时同步
-watch(() => props.language, (newLang) => {
-  if (newLang && langMap[newLang] && langMap[newLang] !== currentLang.value) {
-    currentLang.value = langMap[newLang]
-    setLanguage(currentLang.value)
+watch(() => props.language, (label) => {
+  const monacoLang = label && labelToMonaco[label]
+  if (monacoLang && monacoLang !== currentLang.value) {
+    currentLang.value = monacoLang
+    setLanguage(monacoLang)
   }
 })
 
-onMounted(() => {
-  initEditor()
-})
-
-onBeforeUnmount(() => {
-  editor?.dispose()
-})
+onMounted(initEditor)
+onBeforeUnmount(() => editor?.dispose())
 </script>
 
 <style scoped>

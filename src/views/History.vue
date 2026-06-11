@@ -1,4 +1,3 @@
-//历史记录页面
 <template>
   <div class="history-container">
     <el-card>
@@ -30,7 +29,7 @@
         <el-table-column prop="createdAt" label="分析时间" width="170" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="viewReport(row.id)">查看报告</el-button>
+            <el-button link type="primary" @click="router.push(`/report/${row.id}`)">查看报告</el-button>
             <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>
         </el-table-column>
@@ -51,7 +50,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getHistory, deleteRecord, type HistoryItem } from '@/api/analysis'
+import { getHistory, deleteRecord, type HistoryItem, type HistoryQuery } from '@/api/analysis'
 
 const router = useRouter()
 const loading = ref(false)
@@ -63,20 +62,24 @@ const searchTitle = ref('')
 const searchLanguage = ref('')
 const dateRange = ref<[Date, Date] | null>(null)
 
-const fetchHistory = async () => {
+function buildParams(): HistoryQuery {
+  const params: HistoryQuery = {
+    page: page.value,
+    size: size.value,
+    title: searchTitle.value || undefined,
+    language: searchLanguage.value || undefined
+  }
+  if (dateRange.value?.length === 2) {
+    params.startDate = dateRange.value[0].toISOString().split('T')[0]
+    params.endDate = dateRange.value[1].toISOString().split('T')[0]
+  }
+  return params
+}
+
+async function fetchHistory() {
   loading.value = true
   try {
-    const params: any = {
-      page: page.value,
-      size: size.value,
-      title: searchTitle.value || undefined,
-      language: searchLanguage.value || undefined
-    }
-    if (dateRange.value && dateRange.value.length === 2) {
-      params.startDate = dateRange.value[0].toISOString().split('T')[0]
-      params.endDate = dateRange.value[1].toISOString().split('T')[0]
-    }
-    const res = await getHistory(params)
+    const res = await getHistory(buildParams())
     records.value = res.data.records
     total.value = res.data.total
   } finally {
@@ -84,7 +87,7 @@ const fetchHistory = async () => {
   }
 }
 
-const resetFilters = () => {
+function resetFilters() {
   searchTitle.value = ''
   searchLanguage.value = ''
   dateRange.value = null
@@ -92,11 +95,7 @@ const resetFilters = () => {
   fetchHistory()
 }
 
-const viewReport = (id: number) => {
-  router.push(`/report/${id}`)
-}
-
-const handleDelete = async (id: number) => {
+async function handleDelete(id: number) {
   await ElMessageBox.confirm('确定删除这条记录吗？', '提示', { type: 'warning' })
   await deleteRecord(id)
   ElMessage.success('删除成功')
@@ -108,9 +107,7 @@ watch([searchTitle, searchLanguage, dateRange], () => {
   fetchHistory()
 })
 
-onMounted(() => {
-  fetchHistory()
-})
+onMounted(fetchHistory)
 </script>
 
 <style scoped>
